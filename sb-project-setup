@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+
+import os, json, sys, getopt, subprocess
+
+def main(argv):
+    projectname = ''
+    projectpath = ''
+    try:
+        opts, args = getopt.getopt(argv, "hn:p:", ["name=","path_prefix="])
+    except getopt.GetoptError:
+        print('usage: sb-project-setup [-n|--name] <project_name> [-p|--path_prefix] <project_path_prefix>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('usage: sb-project-setup [-n|--name] <project_name> [-p|--path_prefix] <project_path_prefix>')
+            sys.exit()
+        elif opt in ("-n", "--name"):
+            projectname = arg
+        elif opt in ("-p", "--path_prefix"):
+            projectpath = arg
+    subprocess.run(["toolbox", "-y", "create", "-c", projectname])
+    if not os.path.exists(projectpath):
+        os.makedirs(os.path.join(projectpath, projectname))
+    if os.path.isfile(os.path.join(projectpath, projectname + ".code-workspace")):
+        #TODO: Write code to add to an existing file.
+        print("File already exists, soon this script will be able to edit it, but for now it can only create new files")
+    else:
+        workspace = {}
+        workspace["folders"] = []
+        workspace["folders"].append({
+            "path": projectname
+        })
+        workspace["settings"] = {
+            "terminal.integrated.shellArgs.linux": ["-c", "flatpak-spawn --host toolbox enter -c " + projectname]
+        }
+        with open(os.path.join(projectpath, projectname + ".code-workspace"), 'w') as outfile:
+            json.dump(workspace, outfile)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
